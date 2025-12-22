@@ -1,10 +1,11 @@
 {
   "domain": "omnis",
   "name": "OMNIS Library",
-  "documentation": "https://github.com/TheUndefined/omnis-ha",
-  "requirements": ["omnis-py==0.1.2"],
   "codeowners": ["@TheUndefined"],
   "config_flow": true,
+  "documentation": "https://github.com/TheUndefined/omnis-ha",
+  "issue_tracker": "https://github.com/TheUndefined/omnis-ha/issues",
   "iot_class": "cloud_polling",
+  "requirements": ["omnis-py==0.1.2"],
   "version": "0.1.0"
 }
