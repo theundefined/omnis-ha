@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Biblioteki OMNIS",
+        "data": {
+          "username": "Nazwa użytkownika",
+          "password": "Hasło",
+          "library": "Biblioteka"
+        }
+      },
+      "custom": {
+        "title": "Konfiguracja Własnej Biblioteki",
+        "data": {
+          "url": "Adres bazowy",
+          "institution": "Kod instytucji",
+          "view": "Identyfikator widoku"
+        }
+      }
+    },
+    "error": {
+      "auth": "Błędne uwierzytelnienie"
+    }
+  }
+}

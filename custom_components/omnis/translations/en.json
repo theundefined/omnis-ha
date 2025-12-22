@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OMNIS Library",
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "library": "Library"
+        }
+      },
+      "custom": {
+        "title": "Custom Library Configuration",
+        "data": {
+          "url": "Base URL",
+          "institution": "Institution Code",
+          "view": "View ID"
+        }
+      }
+    },
+    "error": {
+      "auth": "Invalid authentication"
+    }
+  }
+}

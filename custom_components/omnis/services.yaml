@@ -1,0 +1,14 @@
+renew_loan:
+  description: Renews a library loan.
+  fields:
+    config_entry_id:
+      description: The config entry ID of the account.
+      required: true
+      selector:
+        config_entry:
+          integration: omnis
+    loan_id:
+      description: The ID of the loan to renew.
+      required: true
+      selector:
+        text:

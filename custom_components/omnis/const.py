@@ -1,0 +1,7 @@
+DOMAIN = "omnis"
+CONF_INSTITUTION = "institution"
+CONF_VIEW = "view"
+CONF_LIBRARY = "library"
+DEFAULT_INSTITUTION = "48OMNIS_BRP"
+DEFAULT_VIEW = "48OMNIS_BRP:BRACZ"
+DEFAULT_BASE_URL = "https://omnis-br.primo.exlibrisgroup.com"
