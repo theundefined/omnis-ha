@@ -13,6 +13,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -20,6 +21,7 @@ async def async_setup_entry(
     coordinator = data["coordinator"]
 
     async_add_entities([OmnisCalendar(coordinator, entry)])
+
 
 class OmnisCalendar(CoordinatorEntity, CalendarEntity):
     """Representation of an OMNIS Calendar."""
@@ -56,13 +58,13 @@ class OmnisCalendar(CoordinatorEntity, CalendarEntity):
     @property
     def event(self) -> CalendarEvent | None:
         """Return the next upcoming event."""
-        # Not strictly necessary if we implement async_get_events, 
+        # Not strictly necessary if we implement async_get_events,
         # but good for state display.
         events = self._get_events_list()
         # Filter for future events
         now = dt_util.now().date()
         future_events = [e for e in events if e.start >= now]
-        
+
         if future_events:
             future_events.sort(key=lambda x: x.start)
             return future_events[0]
@@ -73,34 +75,28 @@ class OmnisCalendar(CoordinatorEntity, CalendarEntity):
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
         events = self._get_events_list()
-        
+
         # Convert range to date for comparison
         start = start_date.date()
         end = end_date.date()
 
-        return [
-            event for event in events
-            if event.start >= start and event.end <= end
-        ]
+        return [event for event in events if event.start >= start and event.end <= end]
 
     def _get_events_list(self) -> list[CalendarEvent]:
         """Convert loans to CalendarEvents."""
         events = []
         loans = self.coordinator.data.get("loans", [])
-        
+
         for loan in loans:
             loan_date = self._parse_date(loan.due_date)
             if not loan_date:
                 continue
-            
+
             # Create description
-            desc = [
-                f"Autor: {loan.author}",
-                f"Filia: {loan.location_name}"
-            ]
+            desc = [f"Autor: {loan.author}", f"Filia: {loan.location_name}"]
             if loan.sub_location_name:
                 desc.append(f"Lokalizacja: {loan.sub_location_name}")
-            
+
             if loan.renewable:
                 desc.append("✅ Możliwa prolongata")
             else:
@@ -110,9 +106,9 @@ class OmnisCalendar(CoordinatorEntity, CalendarEntity):
                 CalendarEvent(
                     summary=loan.title,
                     start=loan_date,
-                    end=loan_date + timedelta(days=1), # All day event
+                    end=loan_date + timedelta(days=1),  # All day event
                     description="\n".join(desc),
-                    location=loan.location_name
+                    location=loan.location_name,
                 )
             )
         return events

@@ -1,7 +1,11 @@
 from datetime import datetime, date
 import logging
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -13,6 +17,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -22,22 +27,23 @@ async def async_setup_entry(
     entities = []
     # Main account sensor (Loans count)
     entities.append(OmnisAccountSensor(coordinator, entry))
-    
+
     # Fines sensor
     entities.append(OmnisFinesSensor(coordinator, entry))
 
     # Next Due Date sensor
     entities.append(OmnisNextDueSensor(coordinator, entry))
-    
+
     # Branch sensors logic
     branches = set()
     for loan in coordinator.data["loans"]:
         branches.add(loan.location_name)
-    
+
     for branch in branches:
         entities.append(OmnisBranchSensor(coordinator, entry, branch))
 
     async_add_entities(entities)
+
 
 class OmnisBaseSensor(CoordinatorEntity, SensorEntity):
     """Base class for Omnis sensors."""
@@ -59,9 +65,10 @@ class OmnisBaseSensor(CoordinatorEntity, SensorEntity):
             entry_type=None,
         )
 
+
 class OmnisAccountSensor(OmnisBaseSensor):
     """Sensor for total loans count."""
-    
+
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
         self._attr_name = "Wypożyczone książki"
@@ -89,11 +96,12 @@ class OmnisAccountSensor(OmnisBaseSensor):
                     "location": l.location_name,
                     "status": l.status,
                     "renewable": l.renewable,
-                    "loan_id": l.id
+                    "loan_id": l.id,
                 }
                 for l in self.coordinator.data["loans"]
-            ]
+            ],
         }
+
 
 class OmnisFinesSensor(OmnisBaseSensor):
     """Sensor for fines (kary)."""
@@ -113,6 +121,7 @@ class OmnisFinesSensor(OmnisBaseSensor):
     @property
     def native_unit_of_measurement(self):
         return self.coordinator.data["user_info"].fines_currency
+
 
 class OmnisNextDueSensor(OmnisBaseSensor):
     """Sensor for the nearest return date."""
@@ -139,22 +148,24 @@ class OmnisNextDueSensor(OmnisBaseSensor):
         loans = self.coordinator.data["loans"]
         if not loans:
             return None
-        
+
         # Filter valid dates and sort
         valid_loans = []
         for loan in loans:
             d = self._parse_date(loan.due_date)
             if d:
                 valid_loans.append((d, loan))
-        
+
         if not valid_loans:
             return None
-            
+
         valid_loans.sort(key=lambda x: x[0])
         nearest_date, _ = valid_loans[0]
-        
+
         # Return as aware datetime at end of day
-        return dt_util.start_of_local_day(datetime.combine(nearest_date, datetime.min.time()))
+        return dt_util.start_of_local_day(
+            datetime.combine(nearest_date, datetime.min.time())
+        )
 
     @property
     def extra_state_attributes(self):
@@ -167,13 +178,13 @@ class OmnisNextDueSensor(OmnisBaseSensor):
             d = self._parse_date(loan.due_date)
             if d:
                 valid_loans.append((d, loan))
-        
+
         if not valid_loans:
             return {}
 
         valid_loans.sort(key=lambda x: x[0])
         nearest_date, nearest_loan = valid_loans[0]
-        
+
         days_until = (nearest_date - date.today()).days
 
         return {
@@ -181,8 +192,9 @@ class OmnisNextDueSensor(OmnisBaseSensor):
             "book_title": nearest_loan.title,
             "book_author": nearest_loan.author,
             "library_branch": nearest_loan.location_name,
-            "due_date_str": nearest_loan.due_date
+            "due_date_str": nearest_loan.due_date,
         }
+
 
 class OmnisBranchSensor(OmnisBaseSensor):
     """Sensor for loans per branch."""

@@ -14,10 +14,13 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR, Platform.CALENDAR]
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     httpx_client = get_async_client(hass)
-    client = OmnisClient(entry.data.get(CONF_URL, DEFAULT_BASE_URL), client=httpx_client)
-    
+    client = OmnisClient(
+        entry.data.get(CONF_URL, DEFAULT_BASE_URL), client=httpx_client
+    )
+
     async def async_update_data():
         try:
             if not client.token:
@@ -25,15 +28,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     entry.data[CONF_USERNAME],
                     entry.data[CONF_PASSWORD],
                     entry.data.get(CONF_INSTITUTION),
-                    entry.data.get(CONF_VIEW)
+                    entry.data.get(CONF_VIEW),
                 )
-            
+
             user_info = await client.get_user_info()
             loans = await client.get_loans()
-            return {
-                "user_info": user_info,
-                "loans": loans
-            }
+            return {"user_info": user_info, "loans": loans}
         except Exception as err:
             client.token = None  # Force re-login on next fail
             raise UpdateFailed(f"Error communicating with API: {err}")
@@ -43,7 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
-        update_interval=timedelta(hours=1), # Library data doesn't change often
+        update_interval=timedelta(hours=1),  # Library data doesn't change often
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -58,10 +58,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_renew_loan(call):
         entry_id = call.data["config_entry_id"]
         loan_id = call.data["loan_id"]
-        
+
         if entry_id not in hass.data[DOMAIN]:
             raise ValueError("Invalid config entry ID")
-            
+
         client = hass.data[DOMAIN][entry_id]["client"]
         await client.renew_loan(loan_id)
         # Refresh data after renewal
@@ -70,6 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, "renew_loan", handle_renew_loan)
 
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
