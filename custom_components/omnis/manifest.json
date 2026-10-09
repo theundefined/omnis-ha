@@ -6,6 +6,6 @@
   "documentation": "https://github.com/TheUndefined/omnis-ha",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/TheUndefined/omnis-ha/issues",
-  "requirements": ["omnis-py==0.1.2"],
-  "version": "0.1.0"
+  "requirements": ["omnis-py==0.2.14"],
+  "version": "0.2.0"
 }

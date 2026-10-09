@@ -2,7 +2,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_URL
 from homeassistant.core import callback
-from homeassistant.helpers.httpx_client import get_async_client
 import homeassistant.helpers.config_validation as cv
 
 from omnis.client import OmnisClient
@@ -18,6 +17,10 @@ from .const import (
 )
 
 CUSTOM_LIBRARY_NAME = "Custom / Własna..."
+
+# The demo tenant is a mock server for app store reviews, not a real library.
+LIBRARIES = [t for t in KNOWN_TENANTS if not t.get("is_demo")]
+LIBRARY_NAMES = [t["name"] for t in LIBRARIES] + [CUSTOM_LIBRARY_NAME]
 
 
 class OmnisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -37,7 +40,7 @@ class OmnisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Find tenant details
             tenant = next(
-                (t for t in KNOWN_TENANTS if t["name"] == selected_lib_name), None
+                (t for t in LIBRARIES if t["name"] == selected_lib_name), None
             )
             if tenant:
                 self._data[CONF_URL] = tenant["base_url"]
@@ -47,16 +50,14 @@ class OmnisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             errors["base"] = "invalid_library"
 
-        library_names = [t["name"] for t in KNOWN_TENANTS]
-
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_USERNAME): str,
                     vol.Required(CONF_PASSWORD): str,
-                    vol.Required(CONF_LIBRARY, default=library_names[0]): vol.In(
-                        library_names
+                    vol.Required(CONF_LIBRARY, default=LIBRARY_NAMES[0]): vol.In(
+                        LIBRARY_NAMES
                     ),
                 }
             ),
@@ -84,19 +85,21 @@ class OmnisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_verify_and_create(self):
         errors = {}
         try:
-            # Use HA's shared httpx client to avoid blocking I/O on SSL load
-            httpx_client = get_async_client(self.hass)
-            client = OmnisClient(self._data[CONF_URL], client=httpx_client)
-
-            await client.login(
-                self._data[CONF_USERNAME],
-                self._data[CONF_PASSWORD],
-                self._data[CONF_INSTITUTION],
-                self._data[CONF_VIEW],
+            # A dedicated client keeps the login session out of HA's shared client;
+            # created in the executor, as building the SSL context does blocking I/O.
+            client = await self.hass.async_add_executor_job(
+                OmnisClient, self._data[CONF_URL]
             )
-            user_info = await client.get_user_info()
-            # We don't close the shared client
-            await client.close()
+            try:
+                await client.login(
+                    self._data[CONF_USERNAME],
+                    self._data[CONF_PASSWORD],
+                    self._data[CONF_INSTITUTION],
+                    self._data[CONF_VIEW],
+                )
+                user_info = await client.get_user_info()
+            finally:
+                await client.close()
 
             return self.async_create_entry(
                 title=f"{user_info.display_name} ({self._data[CONF_USERNAME]})",
@@ -113,9 +116,9 @@ class OmnisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_USERNAME, default=self._data.get(CONF_USERNAME)
                     ): str,
                     vol.Required(CONF_PASSWORD): str,
-                    vol.Required(CONF_LIBRARY): vol.In(
-                        [t["name"] for t in KNOWN_TENANTS]
-                    ),
+                    vol.Required(
+                        CONF_LIBRARY, default=self._data.get(CONF_LIBRARY)
+                    ): vol.In(LIBRARY_NAMES),
                 }
             ),
             errors=errors,
